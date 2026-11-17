@@ -389,7 +389,7 @@ def render_benchmark_lab() -> None:
         execute_button = st.form_submit_button(
             "Execute Benchmark Experiment",
             type="primary",
-            use_container_width=True,
+            width="stretch",
         )
 
     if execute_button:
@@ -473,13 +473,13 @@ def render_comparison_analysis(manager: ExperimentManager) -> None:
     with col_c1:
         if not filtered_df.empty:
             chart_runtime = build_runtime_vs_size_chart(filtered_df)
-            st.altair_chart(chart_runtime, use_container_width=True)
+            st.altair_chart(chart_runtime, width="stretch")
         else:
             st.caption("No data for current filter selection.")
     with col_c2:
         if not filtered_df.empty:
             chart_comps = build_comparisons_vs_size_chart(filtered_df)
-            st.altair_chart(chart_comps, use_container_width=True)
+            st.altair_chart(chart_comps, width="stretch")
         else:
             st.caption("No data for current filter selection.")
 
@@ -490,10 +490,10 @@ def render_comparison_analysis(manager: ExperimentManager) -> None:
     col_c3, col_c4 = st.columns(2)
     with col_c3:
         chart_phase = build_phase_breakdown_chart(df_agg, selected_n, selected_m)
-        st.altair_chart(chart_phase, use_container_width=True)
+        st.altair_chart(chart_phase, width="stretch")
     with col_c4:
         chart_dist = build_distribution_comparison_chart(df_agg, selected_n, selected_m)
-        st.altair_chart(chart_dist, use_container_width=True)
+        st.altair_chart(chart_dist, width="stretch")
 
     st.markdown("---")
 
@@ -502,7 +502,7 @@ def render_comparison_analysis(manager: ExperimentManager) -> None:
     chart_pattern = build_pattern_length_scaling_chart(
         df_agg[df_agg["distribution"] == selected_dist], selected_n
     )
-    st.altair_chart(chart_pattern, use_container_width=True)
+    st.altair_chart(chart_pattern, width="stretch")
 
 
 # =====================================================================
@@ -565,7 +565,7 @@ def render_complexity_analysis(manager: ExperimentManager) -> None:
     with col_table:
         st.markdown("##### Empirical Exponents & Theoretical Baselines")
         if fit_rows:
-            st.dataframe(pd.DataFrame(fit_rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(fit_rows), width="stretch", hide_index=True)
         else:
             st.caption("Insufficient parameter points (need at least 2 distinct n values).")
 
@@ -585,7 +585,7 @@ def render_complexity_analysis(manager: ExperimentManager) -> None:
     with col_plot:
         st.markdown("##### Log-Log Regression Trajectories")
         chart_log = build_log_log_regression_chart(subset, fits)
-        st.altair_chart(chart_log, use_container_width=True)
+        st.altair_chart(chart_log, width="stretch")
 
     st.markdown("---")
     st.markdown("##### Detailed Asymptotic Distinction Note")
@@ -650,7 +650,7 @@ def render_results_explorer(manager: ExperimentManager) -> None:
     tab_agg, tab_raw = st.tabs(["Aggregated Summary Metrics", "Raw Individual Repetitions"])
 
     with tab_agg:
-        st.dataframe(filtered_agg, use_container_width=True)
+        st.dataframe(filtered_agg, width="stretch")
 
         # Export Buttons
         col_exp1, col_exp2 = st.columns(2)
@@ -682,7 +682,7 @@ def render_results_explorer(manager: ExperimentManager) -> None:
         if sel_m != "All":
             filtered_raw = filtered_raw[filtered_raw["pattern_length"] == int(sel_m)]
 
-        st.dataframe(filtered_raw, use_container_width=True)
+        st.dataframe(filtered_raw, width="stretch")
 
         col_exp3, col_exp4 = st.columns(2)
         with col_exp3:
