@@ -63,30 +63,24 @@ class KMPMatcher(BaseMatcher):
 
         return lps, preprocessing_comparisons
 
-    def search(self, text: str, pattern: str) -> MatchResult:
-        """Search for all occurrences of pattern in text using KMP.
+    def preprocess(self, pattern: str) -> Tuple[List[int], int]:
+        """Precompute the LPS table and count preprocessing comparisons."""
+        return self.compute_lps_table(pattern)
 
-        Args:
-            text: Corpus string.
-            pattern: Target pattern.
-
-        Returns:
-            MatchResult containing starting indices, comparisons, and timing.
-        """
+    def search_with_preprocessed(
+        self, text: str, pattern: str, preprocessed: Tuple[List[int], int]
+    ) -> MatchResult:
+        """Execute KMP search using a precomputed LPS table."""
         self._validate_inputs(text, pattern)
         start_time = time.perf_counter()
 
         n = len(text)
         m = len(pattern)
+        lps, prep_comparisons = preprocessed
 
-        # Handle empty pattern
         if m == 0:
             return self._handle_empty_pattern(text, start_time)
 
-        # Preprocessing phase: compute LPS table
-        lps, prep_comparisons = self.compute_lps_table(pattern)
-
-        # Handle pattern longer than text
         if m > n:
             return self._handle_pattern_longer_than_text(
                 text, pattern, start_time, prep_comparisons
@@ -97,7 +91,6 @@ class KMPMatcher(BaseMatcher):
         i = 0  # Text index
         j = 0  # Pattern index
 
-        # Search phase
         while i < n:
             search_comparisons += 1
             if text[i] == pattern[j]:
@@ -105,13 +98,10 @@ class KMPMatcher(BaseMatcher):
                 j += 1
                 if j == m:
                     matches.append(i - j)
-                    # Use LPS to slide pattern forward for overlapping matches
                     j = lps[j - 1]
             elif j != 0:
-                # Mismatch after j matches; shift pattern using LPS table
                 j = lps[j - 1]
             else:
-                # Mismatch at first character; advance text pointer
                 i += 1
 
         elapsed = time.perf_counter() - start_time
@@ -125,9 +115,44 @@ class KMPMatcher(BaseMatcher):
             search_comparisons=search_comparisons,
             total_comparisons=prep_comparisons + search_comparisons,
             execution_time_seconds=elapsed,
+            preprocessing_time_seconds=0.0,
+            search_time_seconds=elapsed,
             metadata={
                 "lps_table": lps,
             },
+        )
+
+    def search(self, text: str, pattern: str) -> MatchResult:
+        """Search for all occurrences of pattern in text using KMP.
+
+        Args:
+            text: Corpus string.
+            pattern: Target pattern.
+
+        Returns:
+            MatchResult containing starting indices, comparisons, and timing.
+        """
+        self._validate_inputs(text, pattern)
+        t_prep_start = time.perf_counter()
+        preprocessed = self.preprocess(pattern)
+        prep_elapsed = time.perf_counter() - t_prep_start
+
+        t_search_start = time.perf_counter()
+        result = self.search_with_preprocessed(text, pattern, preprocessed)
+        search_elapsed = time.perf_counter() - t_search_start
+
+        return MatchResult(
+            algorithm_name=self.name,
+            pattern=pattern,
+            text=text,
+            matches=result.matches,
+            preprocessing_comparisons=result.preprocessing_comparisons,
+            search_comparisons=result.search_comparisons,
+            total_comparisons=result.total_comparisons,
+            execution_time_seconds=prep_elapsed + search_elapsed,
+            preprocessing_time_seconds=prep_elapsed,
+            search_time_seconds=search_elapsed,
+            metadata=result.metadata,
         )
 
 

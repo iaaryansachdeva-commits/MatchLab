@@ -34,6 +34,8 @@ class MatchResult:
     search_comparisons: int
     total_comparisons: int
     execution_time_seconds: float
+    preprocessing_time_seconds: float = 0.0
+    search_time_seconds: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -75,6 +77,17 @@ class BaseMatcher(ABC):
             timing, and algorithm metadata.
         """
         pass
+
+    def preprocess(self, pattern: str) -> Any:
+        """Preprocess pattern if applicable, returning preprocessed structure.
+        Default implementation returns None."""
+        return None
+
+    def search_with_preprocessed(
+        self, text: str, pattern: str, preprocessed: Any
+    ) -> MatchResult:
+        """Search text using preprocessed pattern data."""
+        return self.search(text, pattern)
 
     def _validate_inputs(self, text: str, pattern: str) -> None:
         """Validate input types."""

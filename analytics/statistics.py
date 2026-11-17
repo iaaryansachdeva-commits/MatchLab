@@ -1,8 +1,9 @@
-"""Statistical utility functions for empirical analysis."""
+"""Statistical analysis and aggregation functions for empirical benchmarking."""
 
 import math
 import statistics as py_stats
-from typing import Dict, List, Sequence
+from typing import Dict, List, Optional, Sequence
+import pandas as pd
 
 
 def compute_summary_stats(values: Sequence[float]) -> Dict[str, float]:
@@ -12,7 +13,8 @@ def compute_summary_stats(values: Sequence[float]) -> Dict[str, float]:
         values: Sequence of numeric values.
 
     Returns:
-        Dictionary containing count, mean, median, stdev, variance, min, max, iqr.
+        Dictionary containing count, mean, median, stdev, variance, min, max, iqr,
+        and 95% confidence intervals.
     """
     if not values:
         raise ValueError("Cannot compute statistics on empty sequence")
@@ -51,4 +53,31 @@ def compute_summary_stats(values: Sequence[float]) -> Dict[str, float]:
         "iqr": iqr_val,
         "ci_95_lower": mean_val - ci_95_margin,
         "ci_95_upper": mean_val + ci_95_margin,
+    }
+
+
+def calculate_runtime_statistics(runtimes_seconds: Sequence[float]) -> Dict[str, float]:
+    """Compute runtime statistical metrics required by the benchmarking engine."""
+    stats = compute_summary_stats(runtimes_seconds)
+    return {
+        "mean_runtime": stats["mean"],
+        "median_runtime": stats["median"],
+        "std_runtime": stats["stdev"],
+        "min_runtime": stats["min"],
+        "max_runtime": stats["max"],
+    }
+
+
+def calculate_comparison_statistics(
+    comparisons: Sequence[float | int],
+) -> Dict[str, float]:
+    """Compute character comparison statistical metrics."""
+    float_comps = [float(c) for c in comparisons]
+    stats = compute_summary_stats(float_comps)
+    return {
+        "mean_comparisons": stats["mean"],
+        "median_comparisons": stats["median"],
+        "std_comparisons": stats["stdev"],
+        "min_comparisons": stats["min"],
+        "max_comparisons": stats["max"],
     }

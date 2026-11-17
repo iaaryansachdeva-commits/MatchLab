@@ -2,6 +2,10 @@
 
 from generators.input_generator import (
     Alphabet,
+    InputDistribution,
+    GeneratedInput,
+    get_alphabet_by_size,
+    generate_benchmark_input,
     generate_random_string,
     generate_dna_sequence,
     generate_binary_sequence,
@@ -15,6 +19,10 @@ from generators.input_generator import (
 
 __all__ = [
     "Alphabet",
+    "InputDistribution",
+    "GeneratedInput",
+    "get_alphabet_by_size",
+    "generate_benchmark_input",
     "generate_random_string",
     "generate_dna_sequence",
     "generate_binary_sequence",

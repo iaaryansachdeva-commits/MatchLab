@@ -77,6 +77,8 @@ class NaiveStringMatcher(BaseMatcher):
             search_comparisons=search_comparisons,
             total_comparisons=search_comparisons,
             execution_time_seconds=elapsed,
+            preprocessing_time_seconds=0.0,
+            search_time_seconds=elapsed,
             metadata={
                 "shifts_evaluated": n - m + 1,
             },

@@ -2,13 +2,14 @@
 
 Command-line entry point providing:
 1. Quick algorithmic demonstration across standard, repetitive, and adversarial inputs.
-2. Benchmark sweep execution with comparison metrics.
-3. Empirical complexity scaling analysis.
+2. Controlled empirical benchmark sweep execution with Pandas tabular reporting.
+3. Automated CSV and JSON result serialization.
+4. Empirical log-log complexity scaling analysis.
 """
 
 import argparse
-import sys
 from pathlib import Path
+import sys
 
 # Ensure package directory is in sys.path
 current_dir = Path(__file__).resolve().parent
@@ -19,13 +20,13 @@ from algorithms.naive import NaiveStringMatcher
 from algorithms.kmp import KMPMatcher
 from algorithms.boyer_moore import BoyerMooreMatcher
 from benchmarking.benchmark_runner import BenchmarkRunner
-from benchmarking.experiment_config import BenchmarkScenario, ExperimentConfig
+from benchmarking.experiment_config import ExperimentConfig
 from analytics.complexity_estimator import ComplexityEstimator
 from generators.input_generator import (
+    InputDistribution,
     generate_worst_case_naive,
     generate_best_case_boyer_moore,
     generate_overlapping_case,
-    generate_dna_sequence,
 )
 
 
@@ -86,45 +87,80 @@ def run_demonstration() -> None:
         print("-" * 80)
 
 
-def run_benchmark_cli(scenario_name: str = "random_ascii") -> None:
-    """Run an empirical benchmark sweep from the command line."""
-    print(f"\nExecuting Benchmark Sweep on Scenario: {scenario_name}")
+def run_benchmark_cli(
+    distribution_name: str = "random",
+    repetitions: int = 30,
+    export_dir: str = "results",
+) -> None:
+    """Run an empirical benchmark sweep from the command line with CSV/JSON export."""
+    dist = InputDistribution(distribution_name)
+    print(f"\nExecuting Benchmark Sweep on Distribution: {dist.value}")
+    print(f"Repetitions per configuration point: {repetitions}")
+
     config = ExperimentConfig(
-        scenario=BenchmarkScenario(scenario_name),
+        name=f"benchmark_{dist.value}",
+        distributions=[dist],
         text_lengths=[500, 1000, 2000, 4000],
         pattern_lengths=[10],
-        trials_per_config=3,
-        warmup_runs=1,
+        alphabet_sizes=[26],
+        repetitions=repetitions,
+        warmup_runs=3,
+        seed=42,
     )
     runner = BenchmarkRunner()
-    results = runner.run_experiment(config)
+    manager = runner.run_experiment(config)
 
-    print("-" * 85)
-    print(
-        f"{'Algorithm':<14} | {'n':<6} | {'m':<4} | {'Mean Prep':<10} | "
-        f"{'Mean Search':<11} | {'Mean Total':<10} | {'Throughput (c/s)':<16}"
-    )
-    print("-" * 85)
+    # Tabular processing with Pandas
+    df_agg = manager.get_aggregated_dataframe()
+    cols_to_show = [
+        "algorithm_name",
+        "text_length",
+        "pattern_length",
+        "mean_search_comparisons",
+        "mean_preprocessing_comparisons",
+        "mean_total_comparisons",
+        "mean_search_time_seconds",
+        "mean_throughput_chars_per_sec",
+    ]
+    formatted_df = df_agg[cols_to_show].copy()
+    formatted_df["mean_search_time_ms"] = (
+        formatted_df["mean_search_time_seconds"] * 1000.0
+    ).round(4)
+    formatted_df.drop(columns=["mean_search_time_seconds"], inplace=True)
 
-    for r in results:
-        print(
-            f"{r.algorithm_name:<14} | {r.text_length:<6} | {r.pattern_length:<4} | "
-            f"{r.mean_prep_comparisons:<10.1f} | {r.mean_search_comparisons:<11.1f} | "
-            f"{r.mean_total_comparisons:<10.1f} | {r.mean_throughput_chars_per_sec:<16,.0f}"
-        )
-    print("-" * 85)
+    print("\nAggregated Benchmark Results:")
+    print(formatted_df.to_string(index=False))
 
-    # Complexity estimation analysis
-    print("\nEmpirical Complexity Scaling Analysis (Comparisons vs Text Length n):")
+    # Export results
+    export_paths = manager.export_all(export_dir)
+    print("\nExported Datasets:")
+    for key, path in export_paths.items():
+        print(f"  {key:<18}: {path}")
+
+    # Empirical Complexity Estimation
+    print("\nEmpirical Complexity Scaling Analysis (log(T(n)) = log(c) + k * log(n)):")
     for alg in config.algorithms:
-        alg_res = [r for r in results if r.algorithm_name == alg]
-        if len(alg_res) >= 2:
-            xs = [float(r.text_length) for r in alg_res]
-            ys = [float(r.mean_search_comparisons) for r in alg_res]
-            fit = ComplexityEstimator.fit_power_law(xs, ys)
-            print(
-                f"  {alg:<12}: Exponent b={fit.exponent:.2f} (R²={fit.r_squared:.4f}) -> {fit.classified_complexity}"
+        alg_rows = df_agg[df_agg["algorithm_name"] == alg]
+        if len(alg_rows) >= 2:
+            xs = alg_rows["text_length"].tolist()
+            # Fit scaling on search comparisons
+            fit_comps = ComplexityEstimator.fit_log_log(
+                xs, alg_rows["mean_search_comparisons"].tolist()
             )
+            # Fit scaling on search time
+            fit_time = ComplexityEstimator.fit_log_log(
+                xs, alg_rows["mean_search_time_seconds"].tolist()
+            )
+            print(f"\nAlgorithm: {alg}")
+            print(
+                f"  Comparison Exponent k = {fit_comps.exponent:.3f} (R² = {fit_comps.r_squared:.4f}) "
+                f"-> {fit_comps.empirical_classification}"
+            )
+            print(
+                f"  Runtime Exponent    k = {fit_time.exponent:.3f} (R² = {fit_time.r_squared:.4f}) "
+                f"-> {fit_time.empirical_classification}"
+            )
+            print(f"  Distinction: {fit_comps.asymptotic_distinction}")
 
 
 def main() -> None:
@@ -138,13 +174,29 @@ def main() -> None:
         "--benchmark",
         type=str,
         default=None,
-        help="Run benchmark sweep for scenario (random_ascii, random_dna, repetitive, worst_case_naive, best_case_bm)",
+        help="Run benchmark sweep for distribution (random, repetitive, periodic, adversarial_prefix, best_case, absent)",
+    )
+    parser.add_argument(
+        "--repetitions",
+        type=int,
+        default=30,
+        help="Number of independent repetitions per configuration point (default: 30)",
+    )
+    parser.add_argument(
+        "--export-dir",
+        type=str,
+        default="results",
+        help="Directory to save CSV and JSON exports",
     )
 
     args = parser.parse_args()
 
     if args.benchmark:
-        run_benchmark_cli(args.benchmark)
+        run_benchmark_cli(
+            distribution_name=args.benchmark,
+            repetitions=args.repetitions,
+            export_dir=args.export_dir,
+        )
     else:
         run_demonstration()
 

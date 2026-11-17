@@ -78,7 +78,7 @@ def plot_execution_time_vs_text_length(
     for alg in algorithms:
         alg_metrics = sorted([m for m in filtered if m.algorithm_name == alg], key=lambda x: x.text_length)
         x = [m.text_length for m in alg_metrics]
-        y = [m.mean_time_seconds * 1000.0 for m in alg_metrics]  # Convert to ms
+        y = [m.mean_search_time_seconds * 1000.0 for m in alg_metrics]  # Convert to ms
         style = styles.get(alg, {"color": "black", "marker": "x", "linestyle": "-"})
         ax.plot(x, y, label=alg, **style)
 
@@ -109,7 +109,7 @@ def plot_algorithm_comparison_bar(
 
     fig, ax = plt.subplots(figsize=(8, 5))
     names = [m.algorithm_name for m in target_metrics]
-    prep = [m.mean_prep_comparisons for m in target_metrics]
+    prep = [m.mean_preprocessing_comparisons for m in target_metrics]
     search = [m.mean_search_comparisons for m in target_metrics]
 
     x = range(len(names))

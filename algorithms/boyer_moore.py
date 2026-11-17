@@ -183,31 +183,35 @@ class BoyerMooreMatcher(BaseMatcher):
 
         return good_suffix, full_match_shift, prep_comparisons
 
-    def search(self, text: str, pattern: str) -> MatchResult:
-        """Search for all occurrences of pattern in text using Boyer-Moore.
-
-        Args:
-            text: Corpus string.
-            pattern: Target pattern.
+    def preprocess(
+        self, pattern: str
+    ) -> Tuple[Dict[str, int], List[int], int, int]:
+        """Precompute Bad Character table and Good Suffix table.
 
         Returns:
-            MatchResult containing starting indices, comparisons, and timing.
+            Tuple of (bad_char_table, good_suffix_table, full_match_shift, prep_comparisons).
         """
+        bad_char = self.compute_bad_character_table(pattern)
+        good_suffix, full_match_shift, prep_comparisons = self.compute_good_suffix_table(pattern)
+        return bad_char, good_suffix, full_match_shift, prep_comparisons
+
+    def search_with_preprocessed(
+        self,
+        text: str,
+        pattern: str,
+        preprocessed: Tuple[Dict[str, int], List[int], int, int],
+    ) -> MatchResult:
+        """Execute Boyer-Moore search using precomputed tables."""
         self._validate_inputs(text, pattern)
         start_time = time.perf_counter()
 
         n = len(text)
         m = len(pattern)
+        bad_char, good_suffix, full_match_shift, prep_comparisons = preprocessed
 
-        # Handle empty pattern
         if m == 0:
             return self._handle_empty_pattern(text, start_time)
 
-        # Preprocessing phase
-        bad_char = self.compute_bad_character_table(pattern)
-        good_suffix, full_match_shift, prep_comparisons = self.compute_good_suffix_table(pattern)
-
-        # Handle pattern longer than text
         if m > n:
             return self._handle_pattern_longer_than_text(
                 text, pattern, start_time, prep_comparisons
@@ -215,13 +219,11 @@ class BoyerMooreMatcher(BaseMatcher):
 
         matches: List[int] = []
         search_comparisons = 0
-        s = 0  # Shift of the pattern with respect to text
+        s = 0
 
-        # Search phase: slide pattern over text
         while s <= n - m:
             j = m - 1
 
-            # Right-to-left scan
             while j >= 0:
                 search_comparisons += 1
                 if pattern[j] != text[s + j]:
@@ -229,11 +231,9 @@ class BoyerMooreMatcher(BaseMatcher):
                 j -= 1
 
             if j < 0:
-                # Full match found at shift s
                 matches.append(s)
                 s += full_match_shift
             else:
-                # Mismatch at pattern[j] against text[s + j]
                 mismatched_char = text[s + j]
                 last_char_pos = bad_char.get(mismatched_char, -1)
                 bc_shift = max(1, j - last_char_pos)
@@ -251,11 +251,46 @@ class BoyerMooreMatcher(BaseMatcher):
             search_comparisons=search_comparisons,
             total_comparisons=prep_comparisons + search_comparisons,
             execution_time_seconds=elapsed,
+            preprocessing_time_seconds=0.0,
+            search_time_seconds=elapsed,
             metadata={
                 "bad_char_table_size": len(bad_char),
                 "good_suffix_table": good_suffix,
                 "full_match_shift": full_match_shift,
             },
+        )
+
+    def search(self, text: str, pattern: str) -> MatchResult:
+        """Search for all occurrences of pattern in text using Boyer-Moore.
+
+        Args:
+            text: Corpus string.
+            pattern: Target pattern.
+
+        Returns:
+            MatchResult containing starting indices, comparisons, and timing.
+        """
+        self._validate_inputs(text, pattern)
+        t_prep_start = time.perf_counter()
+        preprocessed = self.preprocess(pattern)
+        prep_elapsed = time.perf_counter() - t_prep_start
+
+        t_search_start = time.perf_counter()
+        result = self.search_with_preprocessed(text, pattern, preprocessed)
+        search_elapsed = time.perf_counter() - t_search_start
+
+        return MatchResult(
+            algorithm_name=self.name,
+            pattern=pattern,
+            text=text,
+            matches=result.matches,
+            preprocessing_comparisons=result.preprocessing_comparisons,
+            search_comparisons=result.search_comparisons,
+            total_comparisons=result.total_comparisons,
+            execution_time_seconds=prep_elapsed + search_elapsed,
+            preprocessing_time_seconds=prep_elapsed,
+            search_time_seconds=search_elapsed,
+            metadata=result.metadata,
         )
 
 
