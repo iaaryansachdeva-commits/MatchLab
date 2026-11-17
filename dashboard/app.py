@@ -69,6 +69,24 @@ footer {visibility: hidden;}
     margin-bottom: 16px;
 }
 
+.note-box {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    background: #1e293b;
+    border: 1px solid #334155;
+    padding: 12px 16px;
+    border-radius: 4px;
+    line-height: 1.5;
+}
+
+@media (prefers-color-scheme: light) {
+    .note-box {
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+}
+
 @media (prefers-color-scheme: dark) {
     .matchlab-panel {
         background: #0f172a;
@@ -167,11 +185,11 @@ def render_header() -> None:
     """Render analytical workspace top title bar."""
     st.markdown(
         """
-        <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px;">
-            <div style="font-size: 1.25rem; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">
+        <div style="border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 20px;">
+            <div style="font-size: 1.35rem; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">
                 MatchLab Analysis Platform
             </div>
-            <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+            <div style="font-size: 0.85rem; font-weight: 500; color: #94a3b8; margin-top: 4px;">
                 Empirical Evaluation and Complexity Analysis: Naïve, Knuth-Morris-Pratt, and Boyer-Moore
             </div>
         </div>
@@ -282,8 +300,8 @@ def render_overview(manager: ExperimentManager) -> None:
     st.markdown("---")
     st.markdown(
         """
-        <div style="font-size: 0.8rem; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 4px;">
-            <strong>Methodological Note on Algorithmic Dominance:</strong><br>
+        <div class="note-box">
+            <strong style="color: #ffffff;">Methodological Note on Algorithmic Dominance:</strong><br>
             Exact string matching exhibits no universal absolute winner. Boyer-Moore excels in average-case search over large alphabets (e.g. English, ASCII) by executing sublinear skips of size <em>m</em>. Knuth-Morris-Pratt guarantees strict <em>O(n)</em> worst-case search regardless of input degeneration. Naïve matching avoids all preprocessing overhead, making it competitive on very short patterns.
         </div>
         """,
@@ -573,8 +591,8 @@ def render_complexity_analysis(manager: ExperimentManager) -> None:
     st.markdown("##### Detailed Asymptotic Distinction Note")
     st.markdown(
         """
-        <div style="font-size: 0.8rem; color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 4px;">
-            <strong>Rigorous Engineering Distinction: Empirical Scaling vs Asymptotic Complexity</strong><br>
+        <div class="note-box">
+            <strong style="color: #ffffff;">Rigorous Engineering Distinction: Empirical Scaling vs Asymptotic Complexity</strong><br>
             • <strong>Theoretical Asymptotic Complexity</strong> characterizes algorithmic limiting behavior as <code>n → ∞</code> on idealized Turing or RAM models, abstracting away constant factors and hardware memory architecture.<br>
             • <strong>Empirical Complexity Estimation</strong> evaluates real-world execution across a practical parameter interval <code>[n_min, n_max]</code>. Empirical measurements reflect real CPU cache line residency, memory bandwidth saturation, and Python runtime overhead. Consequently, an algorithm with optimal Big-O bounds may exhibit higher constant overhead on small inputs than simpler algorithms.
         </div>
