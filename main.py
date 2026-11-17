@@ -1,17 +1,9 @@
-"""MatchLab: Empirical Pattern-Matching Algorithm Analyzer.
-
-Command-line entry point providing:
-1. Quick algorithmic demonstration across standard, repetitive, and adversarial inputs.
-2. Controlled empirical benchmark sweep execution with Pandas tabular reporting.
-3. Automated CSV and JSON result serialization.
-4. Empirical log-log complexity scaling analysis.
-"""
+# CLI entry point for algorithm demonstration and benchmark sweeps.
 
 import argparse
 from pathlib import Path
 import sys
 
-# Ensure package directory is in sys.path
 current_dir = Path(__file__).resolve().parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
@@ -31,7 +23,6 @@ from generators.input_generator import (
 
 
 def run_demonstration() -> None:
-    """Run an informative demonstration comparing Naïve, KMP, and Boyer-Moore."""
     matchers = [
         NaiveStringMatcher(),
         KMPMatcher(),
@@ -92,7 +83,6 @@ def run_benchmark_cli(
     repetitions: int = 30,
     export_dir: str = "results",
 ) -> None:
-    """Run an empirical benchmark sweep from the command line with CSV/JSON export."""
     dist = InputDistribution(distribution_name)
     print(f"\nExecuting Benchmark Sweep on Distribution: {dist.value}")
     print(f"Repetitions per configuration point: {repetitions}")
@@ -110,7 +100,6 @@ def run_benchmark_cli(
     runner = BenchmarkRunner()
     manager = runner.run_experiment(config)
 
-    # Tabular processing with Pandas
     df_agg = manager.get_aggregated_dataframe()
     cols_to_show = [
         "algorithm_name",
@@ -131,23 +120,19 @@ def run_benchmark_cli(
     print("\nAggregated Benchmark Results:")
     print(formatted_df.to_string(index=False))
 
-    # Export results
     export_paths = manager.export_all(export_dir)
     print("\nExported Datasets:")
     for key, path in export_paths.items():
         print(f"  {key:<18}: {path}")
 
-    # Empirical Complexity Estimation
     print("\nEmpirical Complexity Scaling Analysis (log(T(n)) = log(c) + k * log(n)):")
     for alg in config.algorithms:
         alg_rows = df_agg[df_agg["algorithm_name"] == alg]
         if len(alg_rows) >= 2:
             xs = alg_rows["text_length"].tolist()
-            # Fit scaling on search comparisons
             fit_comps = ComplexityEstimator.fit_log_log(
                 xs, alg_rows["mean_search_comparisons"].tolist()
             )
-            # Fit scaling on search time
             fit_time = ComplexityEstimator.fit_log_log(
                 xs, alg_rows["mean_search_time_seconds"].tolist()
             )
@@ -174,7 +159,7 @@ def main() -> None:
         "--benchmark",
         type=str,
         default=None,
-        help="Run benchmark sweep for distribution (random, repetitive, periodic, adversarial_prefix, best_case, absent)",
+        help="Run benchmark sweep for distribution",
     )
     parser.add_argument(
         "--repetitions",

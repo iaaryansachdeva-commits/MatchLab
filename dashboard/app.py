@@ -1,16 +1,4 @@
-"""MatchLab: Scientific Pattern-Matching Performance Analyzer.
-
-Presentation layer providing an analytical workspace for empirical algorithm analysis.
-Designed in adherence to minimal, monochromatic, data-dense engineering aesthetics
-(Linear / Vercel Analytics references; strictly zero decorative animations or emojis).
-
-Organized into:
-1. Overview: Key indicators, experiment provenance, and contextual interpretation.
-2. Benchmark Lab: Parametric experiment configuration and execution.
-3. Algorithm Comparison: Interactive runtime, comparison, and distribution charts.
-4. Complexity Analysis: Empirical log-log scaling regression vs asymptotic theory.
-5. Results Explorer: Tabular inspection, multi-dimensional filtering, and serialization.
-"""
+# Streamlit analytical dashboard for MatchLab algorithm benchmarking.
 
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,7 +7,6 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-# Ensure package directory is on sys.path
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent
 if str(project_root) not in sys.path:
@@ -47,20 +34,15 @@ from visualization.plots import (
     build_runtime_vs_size_chart,
 )
 
-# Custom neutral stylesheet for professional developer-tooling aesthetic
 CUSTOM_CSS = """
 <style>
-/* Monochromatic, clean typography */
 html, body, [class*="css"] {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
-
-/* Header tightening */
 header {visibility: hidden;}
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 
-/* Panel Cards */
 .matchlab-panel {
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -94,7 +76,6 @@ footer {visibility: hidden;}
     }
 }
 
-/* Metric Display */
 .metric-box {
     border-left: 3px solid #0f172a;
     padding-left: 12px;
@@ -127,7 +108,6 @@ footer {visibility: hidden;}
     .metric-label { color: #94a3b8; }
 }
 
-/* Tab labels and button styling */
 .stTabs [data-baseweb="tab-list"] {
     gap: 8px;
     border-bottom: 1px solid #e2e8f0;
@@ -158,9 +138,7 @@ footer {visibility: hidden;}
 
 
 def initialize_session_state() -> None:
-    """Initialize benchmark state with a standard reproducible baseline if empty."""
     if "experiment_manager" not in st.session_state:
-        # Generate initial baseline so the dashboard opens with analytical substance
         config = ExperimentConfig(
             experiment_id="baseline_init",
             name="initial_baseline",
@@ -182,7 +160,6 @@ def initialize_session_state() -> None:
 
 
 def render_header() -> None:
-    """Render analytical workspace top title bar."""
     st.markdown(
         """
         <div style="border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 20px;">
@@ -198,12 +175,7 @@ def render_header() -> None:
     )
 
 
-# =====================================================================
-# 1. Overview Section
-# =====================================================================
-
 def render_overview(manager: ExperimentManager) -> None:
-    """Render key performance indicators and experiment summary."""
     df_agg = manager.get_aggregated_dataframe()
     config = manager.config
 
@@ -220,8 +192,6 @@ def render_overview(manager: ExperimentManager) -> None:
         unsafe_allow_html=True,
     )
 
-    # Compute key metrics
-    # Fastest algorithm by mean search time across all evaluated points
     alg_avg_time = df_agg.groupby("algorithm_name")["mean_search_time_seconds"].mean()
     fastest_alg = alg_avg_time.idxmin()
     fastest_time_ms = alg_avg_time.min() * 1000.0
@@ -281,7 +251,6 @@ def render_overview(manager: ExperimentManager) -> None:
             unsafe_allow_html=True,
         )
 
-    # Experiment Provenance & Parameters Panel
     st.markdown("##### Execution Provenance")
     prov_col1, prov_col2, prov_col3, prov_col4 = st.columns(4)
     with prov_col1:
@@ -309,12 +278,7 @@ def render_overview(manager: ExperimentManager) -> None:
     )
 
 
-# =====================================================================
-# 2. Benchmark Lab Section
-# =====================================================================
-
 def render_benchmark_lab() -> None:
-    """Render experiment configuration controls and execution trigger."""
     st.markdown("#### Benchmark Lab: Parameter Grid Configuration")
     st.markdown(
         "<div style='font-size: 0.85rem; color: #64748b; margin-bottom: 20px;'>"
@@ -432,12 +396,7 @@ def render_benchmark_lab() -> None:
         )
 
 
-# =====================================================================
-# 3. Algorithm Comparison Section
-# =====================================================================
-
 def render_comparison_analysis(manager: ExperimentManager) -> None:
-    """Render interactive analytical visualizations."""
     df_agg = manager.get_aggregated_dataframe()
     if df_agg.empty:
         st.info("No benchmark results recorded yet.")
@@ -451,7 +410,6 @@ def render_comparison_analysis(manager: ExperimentManager) -> None:
         unsafe_allow_html=True,
     )
 
-    # Global interactive filters for this view
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
         available_dists = sorted(df_agg["distribution"].unique())
@@ -467,7 +425,6 @@ def render_comparison_analysis(manager: ExperimentManager) -> None:
         (df_agg["distribution"] == selected_dist) & (df_agg["pattern_length"] == selected_m)
     ].copy()
 
-    # Chart Row 1: Runtime vs n & Comparisons vs n
     st.markdown("##### Empirical Scaling with Text Length (n)")
     col_c1, col_c2 = st.columns(2)
     with col_c1:
@@ -485,7 +442,6 @@ def render_comparison_analysis(manager: ExperimentManager) -> None:
 
     st.markdown("---")
 
-    # Chart Row 2: Preprocessing vs Search & Runtime across Distributions
     st.markdown("##### Phase Breakdown & Distribution Sensitivity")
     col_c3, col_c4 = st.columns(2)
     with col_c3:
@@ -497,7 +453,6 @@ def render_comparison_analysis(manager: ExperimentManager) -> None:
 
     st.markdown("---")
 
-    # Chart Row 3: Pattern Length Scaling
     st.markdown("##### Runtime Sensitivity to Pattern Length (m)")
     chart_pattern = build_pattern_length_scaling_chart(
         df_agg[df_agg["distribution"] == selected_dist], selected_n
@@ -505,12 +460,7 @@ def render_comparison_analysis(manager: ExperimentManager) -> None:
     st.altair_chart(chart_pattern, width="stretch")
 
 
-# =====================================================================
-# 4. Complexity Analysis Section
-# =====================================================================
-
 def render_complexity_analysis(manager: ExperimentManager) -> None:
-    """Render empirical log-log scaling estimation and theoretical complexity comparison."""
     df_agg = manager.get_aggregated_dataframe()
     if df_agg.empty:
         st.info("No benchmark results recorded yet.")
@@ -526,12 +476,10 @@ def render_complexity_analysis(manager: ExperimentManager) -> None:
         unsafe_allow_html=True,
     )
 
-    # Compute empirical fits for each algorithm in current selection
     fits: Dict[str, ComplexityFit] = {}
     fit_rows = []
 
     algorithms = sorted(df_agg["algorithm_name"].unique())
-    # Pick current distribution filter for clean scaling
     dists = sorted(df_agg["distribution"].unique())
     chosen_dist = st.selectbox("Distribution for Scaling Regression", dists, index=0)
     subset = df_agg[df_agg["distribution"] == chosen_dist]
@@ -544,7 +492,6 @@ def render_complexity_analysis(manager: ExperimentManager) -> None:
             fit = ComplexityEstimator.fit_log_log(xs, ys)
             fits[alg] = fit
 
-            # Also fit runtime
             fit_time = ComplexityEstimator.fit_log_log(
                 xs, alg_data["mean_search_time_seconds"].tolist()
             )
@@ -601,12 +548,7 @@ def render_complexity_analysis(manager: ExperimentManager) -> None:
     )
 
 
-# =====================================================================
-# 5. Results Explorer Section
-# =====================================================================
-
 def render_results_explorer(manager: ExperimentManager) -> None:
-    """Render interactive data table, filtering, and CSV/JSON export."""
     df_agg = manager.get_aggregated_dataframe()
     df_raw = manager.get_raw_dataframe()
 
@@ -622,7 +564,6 @@ def render_results_explorer(manager: ExperimentManager) -> None:
         unsafe_allow_html=True,
     )
 
-    # Filter controls
     col_f1, col_f2, col_f3, col_f4 = st.columns(4)
     with col_f1:
         algs = ["All"] + sorted(df_agg["algorithm_name"].unique().tolist())
@@ -652,7 +593,6 @@ def render_results_explorer(manager: ExperimentManager) -> None:
     with tab_agg:
         st.dataframe(filtered_agg, width="stretch")
 
-        # Export Buttons
         col_exp1, col_exp2 = st.columns(2)
         with col_exp1:
             csv_agg = filtered_agg.to_csv(index=False)
@@ -703,10 +643,6 @@ def render_results_explorer(manager: ExperimentManager) -> None:
             )
 
 
-# =====================================================================
-# Main Application Flow
-# =====================================================================
-
 def main() -> None:
     if st is None:
         print("Streamlit is required. Run: pip install streamlit")
@@ -725,7 +661,6 @@ def main() -> None:
 
     manager = st.session_state["experiment_manager"]
 
-    # Top navigation tabs organizing the analytical workspace
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             "Overview",

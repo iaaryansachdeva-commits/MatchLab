@@ -1,9 +1,4 @@
-"""Knuth-Morris-Pratt (KMP) String Matching Algorithm.
-
-This module implements the KMP algorithm with separate tracking of:
-1. Preprocessing comparisons (LPS / π table construction).
-2. Searching comparisons against the corpus text.
-"""
+# Knuth-Morris-Pratt (KMP) string matching algorithm.
 
 import time
 from typing import List, Tuple
@@ -12,39 +7,17 @@ from algorithms.base import BaseMatcher, MatchResult
 
 
 class KMPMatcher(BaseMatcher):
-    """Knuth-Morris-Pratt (KMP) String Matching Algorithm.
-
-    Complexity Characteristics:
-        - Preprocessing Time: O(m) where m is pattern length.
-        - Preprocessing Comparisons: <= 2 * m character comparisons.
-        - Space Complexity: O(m) auxiliary space for the LPS (Longest Proper Prefix
-          which is also a Suffix) array.
-        - Search Time: O(n) where n is text length, making worst-case search linear
-          independent of alphabet size or repetition.
-        - Search Comparisons: <= 2 * n character comparisons.
-        - Total Time: O(n + m).
-        - Overlapping Matches: Supported by transitioning to j = lps[j - 1] after a match.
-    """
-
     @property
     def name(self) -> str:
         return "KMP"
 
     def compute_lps_table(self, pattern: str) -> Tuple[List[int], int]:
-        """Compute the Longest Proper Prefix which is also a Suffix (LPS) array.
-
-        Args:
-            pattern: The pattern string.
-
-        Returns:
-            A tuple of (lps_array, preprocessing_comparisons).
-        """
         m = len(pattern)
         if m == 0:
             return [], 0
 
         lps = [0] * m
-        length = 0  # Length of the previous longest prefix suffix
+        length = 0
         i = 1
         preprocessing_comparisons = 0
 
@@ -55,7 +28,6 @@ class KMPMatcher(BaseMatcher):
                 lps[i] = length
                 i += 1
             elif length != 0:
-                # Fall back to shorter prefix suffix without character comparison
                 length = lps[length - 1]
             else:
                 lps[i] = 0
@@ -64,13 +36,11 @@ class KMPMatcher(BaseMatcher):
         return lps, preprocessing_comparisons
 
     def preprocess(self, pattern: str) -> Tuple[List[int], int]:
-        """Precompute the LPS table and count preprocessing comparisons."""
         return self.compute_lps_table(pattern)
 
     def search_with_preprocessed(
         self, text: str, pattern: str, preprocessed: Tuple[List[int], int]
     ) -> MatchResult:
-        """Execute KMP search using a precomputed LPS table."""
         self._validate_inputs(text, pattern)
         start_time = time.perf_counter()
 
@@ -88,8 +58,8 @@ class KMPMatcher(BaseMatcher):
 
         matches: List[int] = []
         search_comparisons = 0
-        i = 0  # Text index
-        j = 0  # Pattern index
+        i = 0
+        j = 0
 
         while i < n:
             search_comparisons += 1
@@ -123,15 +93,6 @@ class KMPMatcher(BaseMatcher):
         )
 
     def search(self, text: str, pattern: str) -> MatchResult:
-        """Search for all occurrences of pattern in text using KMP.
-
-        Args:
-            text: Corpus string.
-            pattern: Target pattern.
-
-        Returns:
-            MatchResult containing starting indices, comparisons, and timing.
-        """
         self._validate_inputs(text, pattern)
         t_prep_start = time.perf_counter()
         preprocessed = self.preprocess(pattern)
@@ -157,5 +118,4 @@ class KMPMatcher(BaseMatcher):
 
 
 def kmp_search(text: str, pattern: str) -> MatchResult:
-    """Convenience functional interface for KMP string matching."""
     return KMPMatcher().search(text, pattern)

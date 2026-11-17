@@ -1,21 +1,11 @@
-"""Statistical analysis and aggregation functions for empirical benchmarking."""
+# Statistical analysis and aggregation functions for empirical benchmarking.
 
 import math
 import statistics as py_stats
-from typing import Dict, List, Optional, Sequence
-import pandas as pd
+from typing import Dict, Sequence
 
 
 def compute_summary_stats(values: Sequence[float]) -> Dict[str, float]:
-    """Compute comprehensive descriptive statistics on a sequence of numerical values.
-
-    Args:
-        values: Sequence of numeric values.
-
-    Returns:
-        Dictionary containing count, mean, median, stdev, variance, min, max, iqr,
-        and 95% confidence intervals.
-    """
     if not values:
         raise ValueError("Cannot compute statistics on empty sequence")
 
@@ -29,14 +19,12 @@ def compute_summary_stats(values: Sequence[float]) -> Dict[str, float]:
     min_val = sorted_vals[0]
     max_val = sorted_vals[-1]
 
-    # Percentiles
     p25_idx = int(0.25 * (n - 1))
     p75_idx = int(0.75 * (n - 1))
     p25_val = sorted_vals[p25_idx]
     p75_val = sorted_vals[p75_idx]
     iqr_val = p75_val - p25_val
 
-    # 95% Confidence Interval for the mean using standard error
     stderr = stdev_val / math.sqrt(n) if n > 0 else 0.0
     ci_95_margin = 1.96 * stderr
 
@@ -57,7 +45,6 @@ def compute_summary_stats(values: Sequence[float]) -> Dict[str, float]:
 
 
 def calculate_runtime_statistics(runtimes_seconds: Sequence[float]) -> Dict[str, float]:
-    """Compute runtime statistical metrics required by the benchmarking engine."""
     stats = compute_summary_stats(runtimes_seconds)
     return {
         "mean_runtime": stats["mean"],
@@ -71,7 +58,6 @@ def calculate_runtime_statistics(runtimes_seconds: Sequence[float]) -> Dict[str,
 def calculate_comparison_statistics(
     comparisons: Sequence[float | int],
 ) -> Dict[str, float]:
-    """Compute character comparison statistical metrics."""
     float_comps = [float(c) for c in comparisons]
     stats = compute_summary_stats(float_comps)
     return {

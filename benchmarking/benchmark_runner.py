@@ -1,13 +1,4 @@
-"""Centralized benchmark runner for empirical string matching evaluations.
-
-Executes controlled, reproducible benchmark experiments:
-- Independent warm-up executions per configuration point.
-- Nanosecond timing precision via time.perf_counter_ns().
-- Strict separation of preprocessing, search, and total execution times.
-- Input generation executed strictly outside measured timing windows.
-- Shared input pairs across all evaluated algorithms for controlled comparisons.
-- Default 30 repetitions for statistical validity.
-"""
+# Centralized benchmark runner measuring runtime and comparison operations.
 
 from datetime import datetime, timezone
 import statistics as py_stats
@@ -29,8 +20,6 @@ from generators.input_generator import (
 
 
 class BenchmarkRunner:
-    """Centralized benchmarking engine executing empirical performance measurements."""
-
     DEFAULT_MATCHERS: Dict[str, BaseMatcher] = {
         "Naive": NaiveStringMatcher(),
         "KMP": KMPMatcher(),
@@ -47,20 +36,14 @@ class BenchmarkRunner:
         experiment_id: str,
         repetition_index: int,
     ) -> RawMeasurement:
-        """Execute a single timed repetition separating preprocessing and search phases.
-
-        Note: input generation has already completed outside this function.
-        """
         text = input_data.text
         pattern = input_data.pattern
 
-        # Preprocessing timing
         t_prep_start = time.perf_counter_ns()
         preprocessed = matcher.preprocess(pattern)
         t_prep_end = time.perf_counter_ns()
         prep_time_ns = t_prep_end - t_prep_start
 
-        # Search timing
         t_search_start = time.perf_counter_ns()
         match_result = matcher.search_with_preprocessed(text, pattern, preprocessed)
         t_search_end = time.perf_counter_ns()
@@ -95,7 +78,6 @@ class BenchmarkRunner:
         self,
         measurements: List[RawMeasurement],
     ) -> AggregatedMetric:
-        """Compute descriptive statistics over repetitions for a single configuration point."""
         if not measurements:
             raise ValueError("Cannot aggregate empty measurements list")
 
@@ -159,11 +141,6 @@ class BenchmarkRunner:
         )
 
     def run_experiment(self, config: ExperimentConfig) -> ExperimentManager:
-        """Run complete parameter sweep specified by ExperimentConfig.
-
-        Returns:
-            An ExperimentManager populated with raw measurements and aggregated metrics.
-        """
         raw_list: List[RawMeasurement] = []
         agg_list: List[AggregatedMetric] = []
 
@@ -179,8 +156,6 @@ class BenchmarkRunner:
             for alphabet_size in config.alphabet_sizes:
                 for m in config.pattern_lengths:
                     for n in config.text_lengths:
-                        # 1. Generate input OUTSIDE timing window.
-                        # The exact same input is shared across all algorithms.
                         input_data = generate_benchmark_input(
                             distribution=dist,
                             text_length=n,
@@ -190,14 +165,12 @@ class BenchmarkRunner:
                         )
 
                         for matcher in active_matchers:
-                            # 2. Warm-up executions
                             for _ in range(config.warmup_runs):
                                 prep = matcher.preprocess(input_data.pattern)
                                 matcher.search_with_preprocessed(
                                     input_data.text, input_data.pattern, prep
                                 )
 
-                            # 3. Measured repetitions
                             point_measurements: List[RawMeasurement] = []
                             for rep in range(config.repetitions):
                                 raw = self.measure_single_repetition(
@@ -209,7 +182,6 @@ class BenchmarkRunner:
                                 point_measurements.append(raw)
                                 raw_list.append(raw)
 
-                            # 4. Statistical aggregation
                             agg = self.aggregate_measurements(point_measurements)
                             agg_list.append(agg)
 

@@ -1,4 +1,4 @@
-"""Experiment manager for tabular processing and export of empirical results."""
+# Storage, DataFrame conversion, and CSV/JSON export for benchmark experiments.
 
 import json
 from pathlib import Path
@@ -15,8 +15,6 @@ from benchmarking.metrics import (
 
 
 class ExperimentManager:
-    """Manages storage, tabular conversion, and serialization of benchmark results."""
-
     def __init__(
         self,
         config: ExperimentConfig,
@@ -28,15 +26,12 @@ class ExperimentManager:
         self.aggregated_metrics: List[AggregatedMetric] = aggregated_metrics or []
 
     def get_raw_dataframe(self) -> pd.DataFrame:
-        """Return raw measurements as a Pandas DataFrame."""
         return raw_measurements_to_dataframe(self.raw_measurements)
 
     def get_aggregated_dataframe(self) -> pd.DataFrame:
-        """Return aggregated summary metrics as a Pandas DataFrame."""
         return aggregated_metrics_to_dataframe(self.aggregated_metrics)
 
     def export_raw_to_csv(self, filepath: str | Path) -> Path:
-        """Export raw measurement records to CSV."""
         path = Path(filepath)
         path.parent.mkdir(parents=True, exist_ok=True)
         df = self.get_raw_dataframe()
@@ -44,7 +39,6 @@ class ExperimentManager:
         return path
 
     def export_raw_to_json(self, filepath: str | Path) -> Path:
-        """Export raw measurement records to JSON."""
         path = Path(filepath)
         path.parent.mkdir(parents=True, exist_ok=True)
         data = [m.to_dict() for m in self.raw_measurements]
@@ -53,7 +47,6 @@ class ExperimentManager:
         return path
 
     def export_aggregated_to_csv(self, filepath: str | Path) -> Path:
-        """Export aggregated metrics to CSV."""
         path = Path(filepath)
         path.parent.mkdir(parents=True, exist_ok=True)
         df = self.get_aggregated_dataframe()
@@ -61,7 +54,6 @@ class ExperimentManager:
         return path
 
     def export_aggregated_to_json(self, filepath: str | Path) -> Path:
-        """Export aggregated metrics to JSON."""
         path = Path(filepath)
         path.parent.mkdir(parents=True, exist_ok=True)
         data = [m.to_dict() for m in self.aggregated_metrics]
@@ -70,7 +62,6 @@ class ExperimentManager:
         return path
 
     def export_all(self, output_dir: str | Path) -> Dict[str, Path]:
-        """Convenience method to export both raw and aggregated results to CSV and JSON."""
         out_dir = Path(output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         exp_id = self.config.experiment_id

@@ -1,27 +1,19 @@
-"""Visualization utilities and interactive chart builders for MatchLab.
+# Visualization utilities and chart builders using Altair and Matplotlib.
 
-Provides:
-1. Interactive Altair charts for Streamlit dashboard integration.
-2. Publication-quality Matplotlib figures for headless rendering and disk export.
-3. Strict, cohesive visual design: neutral monochromatic styling with restrained,
-   accessible categorical algorithm colors (Naive: Crimson, KMP: Cobalt, Boyer-Moore: Emerald).
-"""
-
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 import altair as alt
 import matplotlib
-matplotlib.use("Agg")  # Non-interactive backend safe for headless execution
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from analytics.complexity_estimator import ComplexityFit
 from benchmarking.metrics import AggregatedMetric
 
-# Deliberate, accessible algorithm color palette
 ALGORITHM_COLORS: Dict[str, str] = {
-    "Naive": "#dc2626",        # Crimson
-    "KMP": "#2563eb",          # Cobalt
-    "Boyer-Moore": "#059669",   # Emerald
+    "Naive": "#dc2626",
+    "KMP": "#2563eb",
+    "Boyer-Moore": "#059669",
 }
 
 ALGORITHM_COLOR_SCALE = alt.Scale(
@@ -30,12 +22,7 @@ ALGORITHM_COLOR_SCALE = alt.Scale(
 )
 
 
-# =====================================================================
-# Interactive Altair Chart Builders (for Streamlit Presentation Layer)
-# =====================================================================
-
 def build_runtime_vs_size_chart(df: pd.DataFrame) -> alt.Chart:
-    """Build interactive Altair line chart: Search Runtime (ms) vs Text Length (n)."""
     plot_df = df.copy()
     if "mean_search_time_ms" not in plot_df.columns and "mean_search_time_seconds" in plot_df.columns:
         plot_df["mean_search_time_ms"] = plot_df["mean_search_time_seconds"] * 1000.0
@@ -85,7 +72,6 @@ def build_runtime_vs_size_chart(df: pd.DataFrame) -> alt.Chart:
 
 
 def build_comparisons_vs_size_chart(df: pd.DataFrame) -> alt.Chart:
-    """Build interactive Altair line chart: Character Comparisons vs Text Length (n)."""
     chart = (
         alt.Chart(df)
         .mark_line(point=alt.OverlayMarkDef(filled=True, size=60))
@@ -130,7 +116,6 @@ def build_comparisons_vs_size_chart(df: pd.DataFrame) -> alt.Chart:
 
 
 def build_phase_breakdown_chart(df: pd.DataFrame, text_length: int, pattern_length: int) -> alt.Chart:
-    """Build grouped bar chart comparing Preprocessing vs Search comparisons."""
     target_df = df[
         (df["text_length"] == text_length) & (df["pattern_length"] == pattern_length)
     ].copy()
@@ -138,7 +123,6 @@ def build_phase_breakdown_chart(df: pd.DataFrame, text_length: int, pattern_leng
     if target_df.empty:
         return alt.Chart(pd.DataFrame()).mark_bar()
 
-    # Melt to long format for grouped bars
     melted = target_df.melt(
         id_vars=["algorithm_name"],
         value_vars=["mean_preprocessing_comparisons", "mean_search_comparisons"],
@@ -185,7 +169,6 @@ def build_phase_breakdown_chart(df: pd.DataFrame, text_length: int, pattern_leng
 
 
 def build_distribution_comparison_chart(df: pd.DataFrame, text_length: int, pattern_length: int) -> alt.Chart:
-    """Build bar chart comparing algorithm runtimes across different input distributions."""
     target_df = df[
         (df["text_length"] == text_length) & (df["pattern_length"] == pattern_length)
     ].copy()
@@ -228,7 +211,6 @@ def build_distribution_comparison_chart(df: pd.DataFrame, text_length: int, patt
 
 
 def build_pattern_length_scaling_chart(df: pd.DataFrame, text_length: int) -> alt.Chart:
-    """Build line chart: Search Runtime vs Pattern Length (m) for a fixed Text Length (n)."""
     target_df = df[df["text_length"] == text_length].copy()
     if target_df.empty:
         return alt.Chart(pd.DataFrame()).mark_line()
@@ -280,7 +262,6 @@ def build_log_log_regression_chart(
     df: pd.DataFrame,
     fits: Dict[str, ComplexityFit],
 ) -> alt.Chart:
-    """Build log-log scatter plot with fitted linear regression lines."""
     plot_df = df.copy()
     plot_df = plot_df[plot_df["text_length"] > 0]
     plot_df = plot_df[plot_df["mean_search_comparisons"] > 0]
@@ -348,16 +329,11 @@ def build_log_log_regression_chart(
     )
 
 
-# =====================================================================
-# Matplotlib Figures (for Headless Export and Static Rendering)
-# =====================================================================
-
 def plot_comparisons_vs_text_length(
     metrics: List[AggregatedMetric],
     pattern_length: Optional[int] = None,
     save_path: Optional[str] = None,
 ) -> plt.Figure:
-    """Plot total comparisons vs text length across algorithms using Matplotlib."""
     filtered = metrics
     if pattern_length is not None:
         filtered = [m for m in metrics if m.pattern_length == pattern_length]
@@ -406,7 +382,6 @@ def plot_execution_time_vs_text_length(
     pattern_length: Optional[int] = None,
     save_path: Optional[str] = None,
 ) -> plt.Figure:
-    """Plot execution time (ms) vs text length across algorithms using Matplotlib."""
     filtered = metrics
     if pattern_length is not None:
         filtered = [m for m in metrics if m.pattern_length == pattern_length]
@@ -455,7 +430,6 @@ def plot_algorithm_comparison_bar(
     pattern_length: int,
     save_path: Optional[str] = None,
 ) -> plt.Figure:
-    """Generate side-by-side grouped bar chart: Preprocessing vs Search comparisons."""
     target_metrics = [
         m for m in metrics
         if m.text_length == text_length and m.pattern_length == pattern_length
