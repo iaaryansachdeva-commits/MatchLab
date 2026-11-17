@@ -174,12 +174,12 @@ MatchLab provides three fully independent algorithm implementations inheriting f
 ### 3. Boyer-Moore
 - **Implementation**: [`algorithms/boyer_moore.py`](algorithms/boyer_moore.py)
 - **Variant Details**: Classical Boyer-Moore implementing:
-  1. **Extended Bad Character Rule**: Rightmost occurrence dictionary mapping each character to its rightmost 0-based index in the pattern. On a mismatch at index $j$ with text character $c$, the suggested shift is $\max(1, j - \text{last\_pos}(c))$.
+  1. **Extended Bad Character Rule**: Rightmost occurrence dictionary mapping each character to its rightmost 0-based index in the pattern. On a mismatch at index $j$ with text character $c$, the suggested shift is `max(1, j - last_pos[c])`.
   2. **Strong Good Suffix Rule**: Precomputed using Gusfield's $N$-array derived from the fundamental Z-algorithm on the reversed pattern string. Correctly differentiates between:
      - *Case 1*: An identical substring occurring elsewhere in the pattern preceded by a character distinct from the mismatched character.
      - *Case 2*: The longest proper prefix of the pattern that matches a suffix of the matched substring.
   3. **Right-to-Left Scanning**: At each shift alignment $s$, characters are checked from pattern position $m - 1$ down to $0$.
-  4. **Full Match Shift**: Upon finding a full match, the window shifts by $m - \text{longest\_proper\_border}$, guaranteeing complete detection of overlapping occurrences.
+  4. **Full Match Shift**: Upon finding a full match, the window shifts by `m - longest_proper_border`, guaranteeing complete detection of overlapping occurrences.
 - **Worst-Case Complexity Note**: This implementation is classical Boyer-Moore without the Galil rule or Apostolico-Crochemore match memory. Consequently, its worst-case search complexity on highly periodic strings is $O(n \cdot m)$. On non-periodic strings or when patterns are absent, search complexity is $O(n + m)$.
 - **Best-Case Complexity**: Sublinear $O(n / m)$ when text characters do not exist in the pattern, skipping $m$ text positions per comparison.
 
@@ -202,8 +202,8 @@ To obtain scientifically rigorous and reproducible benchmark measurements, Match
 1. **Measurement Window Isolation**: All synthetic string generation, object allocation, table initialization, plotting, and file I/O take place strictly outside timed code blocks.
 2. **Nanosecond Timer Precision**: Execution elapsed time is captured using `time.perf_counter_ns()`. Floating-point conversion to seconds or milliseconds occurs exclusively during post-run data aggregation.
 3. **Execution Phase Decomposition**: Preprocessing duration and character comparisons are isolated from the search loop:
-   $$\text{total\_time} = \text{preprocessing\_time} + \text{search\_time}$$
-   $$\text{total\_comparisons} = \text{preprocessing\_comparisons} + \text{search\_comparisons}$$
+   $$T_{\text{total}} = T_{\text{preprocessing}} + T_{\text{search}}$$
+   $$C_{\text{total}} = C_{\text{preprocessing}} + C_{\text{search}}$$
 4. **Controlled Input Sharing**: For any evaluation point $(distribution, n, m, |\Sigma|)$, the identical generated corpus text and pattern instance is evaluated across all active algorithms.
 5. **Instruction Cache & Warm-Up Passes**: Configurable unmeasured warm-up iterations precede timed runs to prime CPU instruction caches, memory prefetchers, and Python bytecode caches.
 6. **Central Limit Theorem Compliance**: Full benchmark experiments collect 30 independent repetitions per parameter configuration by default. This satisfies sample size criteria for robust parametric estimation of means, variances, and 95% confidence intervals.
@@ -259,7 +259,7 @@ MatchLab captures fine-grained metrics for each trial repetition and computes de
 | `std_search_time_seconds` | Aggregated | Seconds | Sample standard deviation of search runtimes. |
 | `min_search_time` / `max_search_time` | Aggregated | Seconds | Observed range of search execution durations. |
 | `mean_search_comparisons` | Aggregated | Count | Expected character comparisons during search. |
-| `mean_throughput_chars_per_sec` | Aggregated | $\text{chars/s}$ | Processing throughput: $n / \text{mean\_search\_time\_seconds}$. |
+| `mean_throughput_chars_per_sec` | Aggregated | $\text{chars/s}$ | Processing throughput: $n / \bar{t}_{\text{search}}$ characters per second. |
 
 ### Statistical Aggregation Module
 
